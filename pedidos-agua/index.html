@@ -117,6 +117,12 @@ textarea { min-height: 84px; resize: vertical; }
 .barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--tarjeta);
   border-top: 3px solid var(--linea); box-shadow: 0 -10px 30px rgba(13, 99, 176, .12);
   padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+/* Barra pegada abajo: sin rebote, sin huecos y fuera del camino mientras se escribe */
+html, body { overscroll-behavior-y: none; }
+.barra { transform: translateZ(0); will-change: transform; transition: transform .2s ease; }
+.barra::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 100vh; background: inherit; }
+body.escribiendo .barra { transform: translateY(110%); }
+@media (prefers-reduced-motion: reduce) { .barra { transition: none; } }
 .barra-in { max-width: 560px; margin: 0 auto; display: grid; gap: 10px; }
 .totales { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .totales .etq { color: var(--suave); font-size: 15px; }
@@ -469,6 +475,11 @@ $("enviar").addEventListener("click", () => {
   window.location.href = `https://api.whatsapp.com/send?phone=${CONFIG.whatsapp}&text=${encodeURIComponent(msg)}`;
 });
 ["referencia", "nombre", "telefono"].forEach((id) => $(id).addEventListener("input", () => { $("falta").textContent = ""; }));
+/* Esconder la barra del total mientras el teclado está abierto */
+document.addEventListener("focusin", (e) => { if (e.target.matches("input, textarea")) document.body.classList.add("escribiendo"); });
+document.addEventListener("focusout", (e) => { if (e.target.matches("input, textarea")) setTimeout(() => {
+  if (!document.activeElement || !document.activeElement.matches("input, textarea")) document.body.classList.remove("escribiendo");
+}, 120); });
 actualizar();
 </script>
 </body>
