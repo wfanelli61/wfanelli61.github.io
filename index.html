@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Walter Fanelli · Proyectos</title>
+<meta name="description" content="Aplicaciones web y automatizaciones con IA para pequeños negocios.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@600;700&display=swap">
+<style>
+  :root { --bg: #F4F7FB; --card: #fff; --ink: #0B2A4A; --soft: #4D6680; --line: #D8E3EF; --accent: #1C8CE3; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 600 17px/1.5 "Nunito", system-ui, sans-serif;
+    padding: 40px max(16px, env(safe-area-inset-left, 0px)) 56px max(16px, env(safe-area-inset-right, 0px)); }
+  main { max-width: 640px; margin: 0 auto; display: grid; gap: 20px; }
+  h1 { font: 800 40px/1.05 "Baloo 2", system-ui, sans-serif; margin: 0; }
+  p { margin: 0; color: var(--soft); }
+  a.card { display: grid; gap: 4px; background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 18px 20px;
+    text-decoration: none; color: var(--ink); }
+  a.card:hover, a.card:focus-visible { border-color: var(--accent); outline: none; }
+  a.card b { font: 800 22px/1.2 "Baloo 2", system-ui, sans-serif; }
+  .tag { font-size: 14px; color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Walter Fanelli</h1>
+  <p>Ingeniero en Sistemas. Creo aplicaciones web y automatizaciones con IA para pequeños negocios.</p>
+  <a class="card" href="pedidos-agua/">
+    <span class="tag">Demo en vivo</span>
+    <b>💧 Pedidos de agua por WhatsApp</b>
+    <p>Botellones con precio y delivery, total en $ y Bs con la tasa BCV del día, ubicación en el mapa y pedido directo al WhatsApp del negocio.</p>
+  </a>
+  <a class="card" href="https://chocholeague.com">
+    <span class="tag">En producción</span>
+    <b>⚽ Chocho League</b>
+    <p>Plataforma de un torneo de fútbol: inscripción de equipos, resultados en vivo e IA.</p>
+  </a>
+  <a class="card" href="https://github.com/wfanelli61/n8n-pedidos-agua">
+    <span class="tag">Automatización</span>
+    <b>⚙️ Flujo n8n de pedidos</b>
+    <p>Formulario, tasa BCV por API con respaldo y aviso automático.</p>
+  </a>
+  <a class="card" href="https://claude.ai/artifact/UkB6K6txZx1Y8sgyPHD3N4">
+    <span class="tag">Sobre mí</span>
+    <b>📄 CV interactivo</b>
+    <p>Proyectos, experiencia y muestras de edición de video.</p>
+  </a>
+</main>
+</body>
+</html>

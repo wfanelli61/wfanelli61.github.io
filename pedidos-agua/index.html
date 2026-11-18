@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pide tu agua</title>
+<meta name="description" content="Pide tus botellones de agua en 3 pasos y envía el pedido por WhatsApp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Diseño: una columna pensada para el teléfono; 3 pasos y barra fija abajo con el total y el botón de WhatsApp */
+:root {
+  --cielo: #E9F7FF;
+  --tarjeta: #FFFFFF;
+  --tinta: #0B2A4A;
+  --suave: #4D6680;
+  --agua: #1C8CE3;
+  --agua-osc: #0D63B0;
+  --turquesa: #12B5B0;
+  --sol: #FFC23D;
+  --wa: #1FA855;
+  --wa-osc: #168A45;
+  --linea: #CFE6F5;
+  --error: #D93838;
+  --f-titulo: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --f-texto: "Nunito", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--cielo);
+  background-image:
+    radial-gradient(circle at 12% 8%, #D3EEFF 0 90px, transparent 91px),
+    radial-gradient(circle at 92% 22%, #DDF6F4 0 70px, transparent 71px);
+  color: var(--tinta);
+  font: 600 18px/1.45 var(--f-texto);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+}
+.wrap { max-width: 560px; margin: 0 auto; padding-block: 20px 8px; display: grid; gap: 22px; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--sol); outline-offset: 3px; border-radius: 12px; }
+
+/* ---------- Encabezado ---------- */
+header { display: flex; align-items: center; gap: 14px; }
+.logo { width: 64px; height: 64px; flex: none; }
+header h1 { font: 800 30px/1.05 var(--f-titulo); margin: 0; letter-spacing: -0.01em; }
+header p { margin: 2px 0 0; color: var(--suave); font-size: 16px; }
+.tasa { display: inline-flex; align-items: center; gap: 8px; background: var(--tarjeta); border: 2px solid var(--linea);
+  border-radius: 999px; padding: 6px 14px; font-size: 15px; color: var(--suave); justify-self: start; }
+.tasa b { color: var(--tinta); font-variant-numeric: tabular-nums; }
+
+/* ---------- Pasos ---------- */
+.paso { background: var(--tarjeta); border-radius: 26px; padding: 20px; display: grid; gap: 16px;
+  box-shadow: 0 2px 0 var(--linea), 0 12px 30px rgba(13, 99, 176, .08); }
+.paso-cab { display: flex; align-items: center; gap: 12px; }
+.num { width: 44px; height: 44px; border-radius: 50%; background: var(--agua); color: #fff; display: grid; place-items: center;
+  font: 800 24px/1 var(--f-titulo); flex: none; }
+.paso h2 { font: 800 25px/1.1 var(--f-titulo); margin: 0; }
+.ayuda { margin: 0; color: var(--suave); font-size: 16px; }
+
+/* Botellones */
+.botellones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.bot { border: 3px solid var(--linea); border-radius: 22px; padding: 12px 10px 14px; display: grid; justify-items: center; gap: 4px;
+  text-align: center; transition: border-color .2s, background .2s, transform .15s; background: #fff; }
+.bot.elegido { border-color: var(--agua); background: #F2FAFF; }
+.bot svg { width: 72px; height: 96px; }
+.litros { font: 800 26px/1 var(--f-titulo); }
+.precio { color: var(--suave); font-size: 15px; font-variant-numeric: tabular-nums; }
+.deliv { font-size: 13px; font-weight: 800; color: var(--turquesa); background: #E2F8F7; border-radius: 999px; padding: 2px 10px; margin-top: 2px; }
+.desglose { font-size: 13px; }
+.contador { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.contador button { width: 46px; height: 46px; border-radius: 50%; border: none; font: 800 28px/1 var(--f-titulo);
+  display: grid; place-items: center; transition: transform .1s; }
+.contador button:active { transform: scale(.92); }
+.menos { background: #E4F0FA; color: var(--agua-osc); }
+.mas { background: var(--agua); color: #fff; }
+.contador output { min-width: 30px; font: 800 28px/1 var(--f-titulo); font-variant-numeric: tabular-nums; }
+.bot.solo { grid-column: 1 / -1; grid-template-columns: auto 1fr auto; justify-items: start; text-align: left; align-items: center; gap: 14px; padding: 12px 16px; }
+.bot.solo .info { display: grid; gap: 2px; }
+.bot.solo .contador { margin-top: 0; }
+
+.opcion { display: flex; gap: 10px; flex-wrap: wrap; }
+.chip { border: 3px solid var(--linea); background: #fff; border-radius: 999px; padding: 10px 16px; font-weight: 800; font-size: 16px; }
+.chip[aria-pressed="true"] { border-color: var(--turquesa); background: #E2F8F7; }
+
+/* Mapa */
+#mapa { height: 260px; border-radius: 18px; border: 3px solid var(--linea); z-index: 0; }
+.btn-ubicacion { border: none; background: var(--turquesa); color: #fff; border-radius: 16px; padding: 14px 18px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 18px; }
+.estado-mapa { margin: 0; font-size: 15px; color: var(--suave); min-height: 1.4em; }
+.estado-mapa.ok { color: var(--wa-osc); }
+.estado-mapa.aviso { color: #B26A00; }
+.btn-guardada { border: 3px solid var(--sol); background: #FFF6DE; color: var(--tinta); border-radius: 16px; padding: 14px 18px;
+  font-weight: 800; font-size: 18px; text-align: center; }
+.capas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.capa { border: 3px solid var(--linea); background: #fff; border-radius: 14px; padding: 10px; font-weight: 800; font-size: 16px; }
+.capa[aria-pressed="true"] { border-color: var(--agua); background: #F2FAFF; }
+.consejo { margin: 0; font-size: 15px; color: var(--suave); background: #F2FAFF; border-radius: 14px; padding: 10px 14px; }
+
+/* Campos */
+label.campo { display: grid; gap: 6px; font-weight: 800; }
+label.campo span { font-size: 16px; }
+input[type="text"], input[type="tel"], textarea { width: 100%; border: 3px solid var(--linea); border-radius: 16px; padding: 14px 16px;
+  background: #fff; font-size: 18px; font-weight: 600; }
+input:focus, textarea:focus { border-color: var(--agua); outline: none; }
+textarea { min-height: 84px; resize: vertical; }
+
+/* ---------- Barra fija ---------- */
+.barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--tarjeta);
+  border-top: 3px solid var(--linea); box-shadow: 0 -10px 30px rgba(13, 99, 176, .12);
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.barra-in { max-width: 560px; margin: 0 auto; display: grid; gap: 10px; }
+.totales { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.totales .etq { color: var(--suave); font-size: 15px; }
+.totales .usd { font: 800 30px/1 var(--f-titulo); font-variant-numeric: tabular-nums; }
+.totales .bs { font-size: 16px; color: var(--suave); font-variant-numeric: tabular-nums; text-align: right; }
+.enviar { width: 100%; border: none; border-radius: 18px; padding: 16px; background: var(--wa); color: #fff; font: 800 21px/1.1 var(--f-titulo);
+  display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 0 var(--wa-osc); }
+.enviar:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--wa-osc); }
+.enviar svg { width: 26px; height: 26px; }
+.falta { margin: 0; color: var(--error); font-size: 15px; text-align: center; min-height: 1.3em; }
+
+@keyframes ola { from { transform: translateX(0); } to { transform: translateX(-40px); } }
+.ola { animation: ola 3s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .ola { animation: none; } .bot, .contador button { transition: none; } }
+@media (max-width: 360px) { .botellones { grid-template-columns: 1fr; } .bot.solo { grid-template-columns: auto 1fr; } .bot.solo .contador { grid-column: 1 / -1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="31" fill="#1C8CE3"/>
+      <path d="M32 12c7 9 13 16 13 24a13 13 0 0 1-26 0c0-8 6-15 13-24z" fill="#fff"/>
+      <path d="M26 38a6 6 0 0 0 6 6" stroke="#1C8CE3" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1 id="nombre-negocio">Agua Fresca</h1>
+      <p>Pide tu agua en 3 pasos 💧</p>
+    </div>
+  </header>
+  <span class="tasa" id="tasa">Buscando la tasa del día…</span>
+
+  <!-- PASO 1 -->
+  <section class="paso" aria-labelledby="t1">
+    <div class="paso-cab"><span class="num">1</span><h2 id="t1">Elige tus botellones</h2></div>
+    <p class="ayuda">Toca <b>+</b> para agregar y <b>−</b> para quitar.</p>
+    <div class="botellones" id="botellones"></div>
+    <div>
+      <p class="ayuda" style="margin-bottom:8px">¿Tienes botellones vacíos para cambiar?</p>
+      <div class="opcion" role="group" aria-label="Botellones vacíos para cambiar">
+        <button type="button" class="chip" data-vacios="si" aria-pressed="true">Sí, tengo para cambiar</button>
+        <button type="button" class="chip" data-vacios="no" aria-pressed="false">No</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PASO 2 -->
+  <section class="paso" aria-labelledby="t2">
+    <div class="paso-cab"><span class="num">2</span><h2 id="t2">¿Dónde te lo llevamos?</h2></div>
+    <button type="button" class="btn-guardada" id="btn-guardada" hidden>🏠 Usar la dirección de mi último pedido</button>
+    <button type="button" class="btn-ubicacion" id="btn-ubicacion">📍 Usar mi ubicación</button>
+    <div class="capas" role="group" aria-label="Tipo de mapa">
+      <button type="button" class="capa" data-capa="calles" aria-pressed="true">🗺️ Mapa</button>
+      <button type="button" class="capa" data-capa="satelite" aria-pressed="false">🛰️ Satélite</button>
+    </div>
+    <div id="mapa" role="application" aria-label="Mapa para marcar la dirección de entrega"></div>
+    <p class="estado-mapa" id="estado-mapa">También puedes tocar el mapa para marcar tu casa.</p>
+    <p class="consejo">💡 Usa <b>Satélite</b> para ver el techo de tu casa y arrastra el pin encima. Después de enviar el pedido también puedes compartir tu ubicación en WhatsApp: 📎 → <b>Ubicación</b>.</p>
+    <label class="campo"><span>Dirección y punto de referencia</span>
+      <textarea id="referencia" placeholder="Ej.: Urb. La Viña, calle 3, casa azul frente a la panadería"></textarea>
+    </label>
+  </section>
+
+  <!-- PASO 3 -->
+  <section class="paso" aria-labelledby="t3">
+    <div class="paso-cab"><span class="num">3</span><h2 id="t3">Tus datos</h2></div>
+    <label class="campo"><span>Tu nombre</span><input type="text" id="nombre" autocomplete="name" placeholder="Ej.: María Pérez"></label>
+    <label class="campo"><span>Tu teléfono</span><input type="tel" id="telefono" autocomplete="tel" inputmode="tel" placeholder="Ej.: 0412 123 4567"></label>
+    <div>
+      <p class="ayuda" style="margin-bottom:8px">¿Cómo vas a pagar?</p>
+      <div class="opcion" role="group" aria-label="Forma de pago" id="pagos"></div>
+    </div>
+  </section>
+</div>
+
+<!-- Barra fija -->
+<div class="barra">
+  <div class="barra-in">
+    <div class="totales" aria-live="polite">
+      <div><div class="etq">Total</div><div class="usd" id="total-usd">$0.00</div></div>
+      <div class="bs" id="total-bs">Bs 0,00</div>
+    </div>
+    <button type="button" class="enviar" id="enviar">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>
+      Enviar pedido por WhatsApp
+    </button>
+    <p class="falta" id="falta" role="status"></p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ================== CONFIGURACIÓN DEL NEGOCIO ==================
+   Cambia aquí el nombre, el WhatsApp y los precios.            */
+const CONFIG = {
+  negocio: "Agua Fresca",              // nombre que ve el cliente
+  whatsapp: "584120404713",            // WhatsApp del negocio, formato internacional sin "+"
+  centroMapa: [10.1620, -68.0077],     // Valencia, Carabobo
+  // precio = agua de cada botellón (USD)
+  // delivery "unidad": se cobra por cada botellón
+  // delivery "grupo":  se cobra por cada grupo de N botellas (1 sola paga el grupo completo)
+  productos: [
+    { litros: 20, precio: 0.50, delivery: { tipo: "unidad", monto: 1.00 } },
+    { litros: 15, precio: 0.40, delivery: { tipo: "unidad", monto: 1.00 } },
+    { litros: 12, precio: 0.35, delivery: { tipo: "unidad", monto: 0.75 } },
+    { litros: 8,  precio: 0.25, delivery: { tipo: "unidad", monto: 0.75 } },
+    { litros: 5,  precio: 0.15, delivery: { tipo: "grupo", cada: 4, monto: 1.00 } },
+  ],
+  pagos: ["Pago móvil", "Efectivo $", "Efectivo Bs", "Zelle / Binance"],
+};
+/* ============================================================== */
+
+const fmtUSD = (n) => "$" + n.toFixed(2);
+const fmtBs = (n) => "Bs " + n.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const estado = { cant: {}, tasa: null, fuenteTasa: "", vacios: "si", pago: CONFIG.pagos[0], punto: null };
+document.getElementById("nombre-negocio").textContent = CONFIG.negocio;
+document.title = "Pide tu agua · " + CONFIG.negocio;
+
+/* ---------- Dibujo de cada botellón (más alto = más litros) ---------- */
+function botellonSVG(litros, i) {
+  const max = 20, alto = 34 + (litros / max) * 50;       // cuerpo entre 34 y 84
+  const ancho = 30 + (litros / max) * 26;
+  const x = 36 - ancho / 2, y = 92 - alto;
+  const nivel = y + alto * 0.28;
+  return `<svg viewBox="0 0 72 96" aria-hidden="true">
+    <defs><clipPath id="c${i}"><rect x="${x}" y="${y}" width="${ancho}" height="${alto}" rx="${ancho * 0.28}"/></clipPath></defs>
+    <rect x="31" y="${y - 10}" width="10" height="8" rx="2" fill="#0D63B0"/>
+    <rect x="29" y="${y - 3}" width="14" height="5" rx="2" fill="#7CC4F5"/>
+    <rect x="${x}" y="${y}" width="${ancho}" height="${alto}" rx="${ancho * 0.28}" fill="#DFF2FF" stroke="#1C8CE3" stroke-width="3"/>
+    <g clip-path="url(#c${i})">
+      <path class="ola" d="M${x - 40} ${nivel} q10 -6 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 V96 H${x - 40} Z" fill="#46A8F0"/>
+    </g>
+    <rect x="${x + 6}" y="${y + 8}" width="5" height="${alto * 0.45}" rx="2.5" fill="#fff" opacity=".7"/>
+  </svg>`;
+}
+
+/* ---------- Delivery por tamaño ---------- */
+function deliveryDe(p, n) {
+  if (n <= 0) return 0;
+  const d = p.delivery;
+  return d.tipo === "grupo" ? Math.ceil(n / d.cada) * d.monto : n * d.monto;
+}
+function textoDelivery(p) {
+  const d = p.delivery;
+  return d.tipo === "grupo" ? `${fmtUSD(d.monto)} cada ${d.cada}` : `+${fmtUSD(d.monto)} c/u`;
+}
+
+/* ---------- Paso 1: tarjetas de botellones ---------- */
+const cont = document.getElementById("botellones");
+CONFIG.productos.forEach((p, i) => {
+  estado.cant[p.litros] = 0;
+  const tarjeta = document.createElement("div");
+  const solo = CONFIG.productos.length % 2 === 1 && i === CONFIG.productos.length - 1;
+  tarjeta.className = "bot" + (solo ? " solo" : "");
+  tarjeta.innerHTML = `${botellonSVG(p.litros, i)}
+    <div class="info"><div class="litros">${p.litros} L</div><div class="precio">${fmtUSD(p.precio)} c/u</div><div class="deliv">🛵 ${textoDelivery(p)}</div></div>
+    <div class="contador">
+      <button type="button" class="menos" aria-label="Quitar un botellón de ${p.litros} litros">−</button>
+      <output aria-label="Botellones de ${p.litros} litros">0</output>
+      <button type="button" class="mas" aria-label="Agregar un botellón de ${p.litros} litros">+</button>
+    </div>`;
+  const out = tarjeta.querySelector("output");
+  const cambiar = (d) => {
+    estado.cant[p.litros] = Math.max(0, Math.min(99, estado.cant[p.litros] + d));
+    out.textContent = estado.cant[p.litros];
+    tarjeta.classList.toggle("elegido", estado.cant[p.litros] > 0);
+    actualizar();
+  };
+  tarjeta.querySelector(".menos").addEventListener("click", () => cambiar(-1));
+  tarjeta.querySelector(".mas").addEventListener("click", () => cambiar(1));
+  cont.appendChild(tarjeta);
+});
+
+document.querySelectorAll("[data-vacios]").forEach((b) => b.addEventListener("click", () => {
+  estado.vacios = b.dataset.vacios;
+  document.querySelectorAll("[data-vacios]").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+}));
+
+/* ---------- Paso 3: formas de pago ---------- */
+const pagosEl = document.getElementById("pagos");
+CONFIG.pagos.forEach((nombre, i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.textContent = nombre;
+  b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+  b.addEventListener("click", () => {
+    estado.pago = nombre;
+    pagosEl.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  });
+  pagosEl.appendChild(b);
+});
+
+/* ---------- Paso 2: mapa ---------- */
+const estadoMapa = document.getElementById("estado-mapa");
+let mapa = null, marcador = null;
+function ponerPunto(latlng, texto) {
+  estado.punto = { lat: latlng.lat, lng: latlng.lng };
+  if (mapa) {
+    if (!marcador) {
+      marcador = L.marker(latlng, { draggable: true }).addTo(mapa);
+      marcador.on("dragend", () => { quitarCirculo(); estadoMapa.classList.remove("aviso"); ponerPunto(marcador.getLatLng(), "Ubicación ajustada ✅"); });
+    } else marcador.setLatLng(latlng);
+  }
+  estadoMapa.textContent = texto || "Ubicación marcada ✅ Puedes arrastrar el pin para ajustarla.";
+  estadoMapa.classList.add("ok");
+  actualizar();
+}
+let circulo = null, capas = {};
+if (window.L) {
+  mapa = L.map("mapa", { scrollWheelZoom: false }).setView(CONFIG.centroMapa, 13);
+  capas.calles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "&copy; OpenStreetMap",
+  }).addTo(mapa);
+  capas.satelite = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 19, attribution: "Imágenes &copy; Esri",
+  });
+  mapa.on("click", (e) => { quitarCirculo(); ponerPunto(e.latlng); });
+  document.querySelectorAll("[data-capa]").forEach((b) => b.addEventListener("click", () => {
+    const elegida = b.dataset.capa;
+    Object.entries(capas).forEach(([nombre, capa]) => {
+      if (nombre === elegida) capa.addTo(mapa); else mapa.removeLayer(capa);
+    });
+    document.querySelectorAll("[data-capa]").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    if (elegida === "satelite" && mapa.getZoom() < 17) mapa.setZoom(estado.punto ? 18 : 15);
+  }));
+} else {
+  document.querySelector(".capas").hidden = true;
+  document.getElementById("mapa").hidden = true;
+  estadoMapa.textContent = "El mapa no cargó. Usa el botón de ubicación o escribe tu dirección.";
+}
+function quitarCirculo() { if (circulo && mapa) { mapa.removeLayer(circulo); circulo = null; } }
+function mostrarGPS(ll, precision) {
+  const m = Math.round(precision || 0);
+  if (mapa) {
+    mapa.setView(ll, 18);
+    quitarCirculo();
+    if (m > 0) circulo = L.circle(ll, { radius: m, color: "#1C8CE3", weight: 2, fillOpacity: 0.12 }).addTo(mapa);
+  }
+  ponerPunto(ll, m > 50
+    ? `Te ubicamos, pero con poca precisión (±${m} m). Toca 🛰️ Satélite y arrastra el pin hasta tu casa.`
+    : `¡Te encontramos! ✅ Precisión: ±${m} m. Si el pin no está sobre tu casa, arrástralo.`);
+  estadoMapa.classList.toggle("aviso", m > 50);
+  estadoMapa.classList.toggle("ok", m <= 50);
+}
+
+/* ---------- Recordar los datos del último pedido (solo en este teléfono) ---------- */
+const CLAVE = "pedido-agua-ultimo";
+function leerGuardado() { try { return JSON.parse(localStorage.getItem(CLAVE) || "null"); } catch (e) { return null; } }
+function guardar(datos) { try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (e) { /* sin almacenamiento */ } }
+const guardado = leerGuardado();
+if (guardado) {
+  if (guardado.nombre) document.getElementById("nombre").value = guardado.nombre;
+  if (guardado.telefono) document.getElementById("telefono").value = guardado.telefono;
+  if (guardado.punto || guardado.referencia) {
+    const btn = document.getElementById("btn-guardada");
+    btn.hidden = false;
+    btn.addEventListener("click", () => {
+      if (guardado.referencia) document.getElementById("referencia").value = guardado.referencia;
+      if (guardado.punto) {
+        if (mapa) mapa.setView(guardado.punto, 18);
+        quitarCirculo();
+        ponerPunto(guardado.punto, "Usamos la dirección de tu último pedido ✅");
+      } else actualizar();
+    });
+  }
+}
+
+document.getElementById("btn-ubicacion").addEventListener("click", () => {
+  if (!navigator.geolocation) { estadoMapa.textContent = "Tu teléfono no permite compartir la ubicación. Escribe tu dirección abajo."; return; }
+  estadoMapa.classList.remove("ok");
+  estadoMapa.textContent = "Buscando tu ubicación… acepta el permiso si te lo pide.";
+  navigator.geolocation.getCurrentPosition(
+    (pos) => mostrarGPS({ lat: pos.coords.latitude, lng: pos.coords.longitude }, pos.coords.accuracy),
+    () => { estadoMapa.textContent = "No pudimos ver tu ubicación. Toca el mapa para marcarla o escribe tu dirección."; },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+});
+
+/* ---------- Tasa BCV (con API de respaldo) ---------- */
+const tasaEl = document.getElementById("tasa");
+async function cargarTasa() {
+  const fuentes = [
+    ["BCV", "https://ve.dolarapi.com/v1/dolares/oficial", (j) => j.promedio],
+    ["respaldo", "https://open.er-api.com/v6/latest/USD", (j) => j.rates && j.rates.VES],
+  ];
+  for (const [nombre, url, leer] of fuentes) {
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      const v = leer(await r.json());
+      if (typeof v === "number" && v > 0) {
+        estado.tasa = v; estado.fuenteTasa = nombre;
+        tasaEl.innerHTML = `Tasa ${nombre === "BCV" ? "BCV" : "del día"}: <b>${fmtBs(v)}</b> por $`;
+        actualizar(); return;
+      }
+    } catch (e) { /* prueba la siguiente */ }
+  }
+  tasaEl.textContent = "No pudimos cargar la tasa. El total en Bs se confirma por WhatsApp.";
+}
+cargarTasa();
+
+/* ---------- Totales y validación ---------- */
+const $ = (id) => document.getElementById(id);
+function subtotal() { return CONFIG.productos.reduce((s, p) => s + estado.cant[p.litros] * p.precio, 0); }
+function deliveryTotal() { return CONFIG.productos.reduce((s, p) => s + deliveryDe(p, estado.cant[p.litros]), 0); }
+function totalUSD() { return subtotal() + deliveryTotal(); }
+function actualizar() {
+  const t = totalUSD();
+  $("total-usd").textContent = fmtUSD(t);
+  $("total-bs").innerHTML = (estado.tasa ? fmtBs(t * estado.tasa) : "Bs por confirmar") +
+    (t > 0 ? `<br><span class="desglose">Agua ${fmtUSD(subtotal())} + delivery ${fmtUSD(deliveryTotal())}</span>` : "");
+  $("falta").textContent = "";
+}
+function queFalta() {
+  if (subtotal() === 0) return "Elige al menos un botellón (paso 1).";
+  if (!estado.punto && !$("referencia").value.trim()) return "Marca tu ubicación o escribe tu dirección (paso 2).";
+  if (!$("nombre").value.trim()) return "Escribe tu nombre (paso 3).";
+  if ($("telefono").value.replace(/\D/g, "").length < 7) return "Escribe tu teléfono (paso 3).";
+  return "";
+}
+
+/* ---------- Enviar por WhatsApp ---------- */
+$("enviar").addEventListener("click", () => {
+  const falta = queFalta();
+  if (falta) { $("falta").textContent = falta; return; }
+  const lineas = CONFIG.productos.filter((p) => estado.cant[p.litros] > 0)
+    .map((p) => {
+      const n = estado.cant[p.litros];
+      return `• ${n} × ${p.litros} L = ${fmtUSD(n * p.precio)} + delivery ${fmtUSD(deliveryDe(p, n))}`;
+    });
+  const t = totalUSD();
+  const ubic = estado.punto ? `https://maps.google.com/?q=${estado.punto.lat.toFixed(6)},${estado.punto.lng.toFixed(6)}` : "(no marcó ubicación en el mapa)";
+  const msg = [
+    `Hola ${CONFIG.negocio} 👋 Quiero hacer este pedido:`,
+    "",
+    ...lineas,
+    "",
+    `Agua: ${fmtUSD(subtotal())} · Delivery: ${fmtUSD(deliveryTotal())}`,
+    `💵 Total: ${fmtUSD(t)}` + (estado.tasa ? ` = ${fmtBs(t * estado.tasa)}` : " (Bs por confirmar)"),
+    estado.tasa ? `(tasa ${estado.fuenteTasa === "BCV" ? "BCV" : "del día"}: ${fmtBs(estado.tasa)})` : "",
+    `Pago: ${estado.pago}`,
+    `Botellones vacíos para cambiar: ${estado.vacios === "si" ? "Sí" : "No"}`,
+    "",
+    `👤 ${$("nombre").value.trim()}`,
+    `📞 ${$("telefono").value.trim()}`,
+    `📍 ${ubic}`,
+    $("referencia").value.trim() ? `🏠 ${$("referencia").value.trim()}` : "",
+  ].filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n");
+  guardar({ nombre: $("nombre").value.trim(), telefono: $("telefono").value.trim(),
+            referencia: $("referencia").value.trim(), punto: estado.punto });
+  // api.whatsapp.com conserva los emojis; wa.me los rompe al redirigir
+  window.location.href = `https://api.whatsapp.com/send?phone=${CONFIG.whatsapp}&text=${encodeURIComponent(msg)}`;
+});
+["referencia", "nombre", "telefono"].forEach((id) => $(id).addEventListener("input", () => { $("falta").textContent = ""; }));
+actualizar();
+</script>
+</body>
+</html>
